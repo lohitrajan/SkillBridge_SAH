@@ -7,11 +7,13 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { provisionAccount } from "@/lib/account.functions";
 
 export type AppRole = "student" | "college" | "industry" | "admin";
 
@@ -56,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const loadContext = useCallback(async (uid: string | undefined) => {
+  const loadContext = useCallback(async (uid: string | undefined, retry = true): Promise<void> => {
     if (!uid) {
       setProfile(null);
       setRole(null);
@@ -72,12 +74,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabase.from("colleges").select("id").eq("owner_id", uid).limit(1).maybeSingle(),
       supabase.from("companies").select("id").eq("owner_id", uid).limit(1).maybeSingle(),
     ]);
+    if (retry && (!profileRes.data || !roleRes.data)) {
+      try {
+        await provisionAccount();
+        await loadContextRef.current?.(uid, false);
+        return;
+      } catch {
+        // fall through and use whatever we could read
+      }
+    }
     setProfile((profileRes.data as Profile | null) ?? null);
     setRole(((roleRes.data?.role as AppRole | undefined) ?? null) as AppRole | null);
     setStudentId(studentRes.data?.id ?? null);
     setCollegeId(collegeRes.data?.id ?? null);
     setCompanyId(companyRes.data?.id ?? null);
   }, []);
+
+  const loadContextRef = useRef<typeof loadContext | null>(null);
+  loadContextRef.current = loadContext;
 
   useEffect(() => {
     let active = true;
