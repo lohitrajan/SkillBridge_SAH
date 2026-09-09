@@ -1,4 +1,4 @@
-# 🌉 SkillBridge
+#  SkillBridge
 
 **Bridging campus skills with industry needs.**
 
