@@ -1,4 +1,4 @@
-# Remix of Remix of Remix of SkillMatch Connect
+SkillMatch Connect
 
 Build a complete, production-quality web application for SIH 2026 Problem Statement SIH26044:
 
